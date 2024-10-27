@@ -1,54 +1,155 @@
 #!/usr/bin/python3
+"""
+Script that reads stdin line by line and computes metrics.
+- Input format: <IP Address> - [<date>] "GET /projects/260 HTTP/1.1" <status code> <file size>
+- After every 10 lines and/or keyboard interruption, print statistics
+"""
 
 import sys
+import re
+from typing import Dict, List
 
 
-def print_msg(dict_sc, total_file_size):
+def print_statistics(total_size: int, status_codes: Dict[int, int]) -> None:
     """
-    Method to print
+    Print the computed statistics.
+    
     Args:
-        dict_sc: dict of status codes
-        total_file_size: total of the file
-    Returns:
-        Nothing
+        total_size (int): Total file size
+        status_codes (dict): Dictionary containing status code counts
     """
+    print(f"File size: {total_size}")
+    for code in sorted(status_codes.keys()):
+        if status_codes[code] > 0:
+            print(f"{code}: {status_codes[code]}")
 
-    print("File size: {}".format(total_file_size))
-    for key, val in sorted(dict_sc.items()):
-        if val != 0:
-            print("{}: {}".format(key, val))
+
+def parse_line(line: str) -> tuple:
+    """
+    Parse a log line and extract status code and file size.
+    
+    Args:
+        line (str): Log line to parse
+    
+    Returns:
+        tuple: (status_code, file_size) or (None, None) if invalid format
+    """
+    pattern = r'^\S+ - \[.+\] "GET /projects/260 HTTP/1.1" (\d+) (\d+)$'
+    match = re.match(pattern, line.strip())
+    
+    if match:
+        try:
+            status_code = int(match.group(1))
+            file_size = int(match.group(2))
+            return status_code, file_size
+        except ValueError:
+            return None, None
+    return None, None
 
 
-total_file_size = 0
-code = 0
-counter = 0
-dict_sc = {"200": 0,
-           "301": 0,
-           "400": 0,
-           "401": 0,
-           "403": 0,
-           "404": 0,
-           "405": 0,
-           "500": 0}
+def main():
+    """Main function to process log lines and compute statistics."""
+    total_size = 0
+    line_count = 0
+    status_codes = {
+        200: 0, 301: 0, 400: 0, 401: 0,
+        403: 0, 404: 0, 405: 0, 500: 0
+    }
+    
+    try:
+        for line in sys.stdin:
+            status_code, file_size = parse_line(line)
+            
+            if file_size is not None:
+                total_size += file_size
+                if status_code in status_codes:
+                    status_codes[status_code] += 1
+                    
+            line_count += 1
+            if line_count % 10 == 0:
+                print_statistics(total_size, status_codes)
+                
+    except KeyboardInterrupt:
+        print_statistics(total_size, status_codes)
+        raise
+    
+    
+if __name__ == "__main__":
+    main()#!/usr/bin/python3
+"""
+Script that reads stdin line by line and computes metrics.
+- Input format: <IP Address> - [<date>] "GET /projects/260 HTTP/1.1" <status code> <file size>
+- After every 10 lines and/or keyboard interruption, print statistics
+"""
 
-try:
-    for line in sys.stdin:
-        parsed_line = line.split()  # ✄ trimming
-        parsed_line = parsed_line[::-1]  # inverting
+import sys
+import re
+from typing import Dict, List
 
-        if len(parsed_line) > 2:
-            counter += 1
 
-            if counter <= 10:
-                total_file_size += int(parsed_line[0])  # file size
-                code = parsed_line[1]  # status code
+def print_statistics(total_size: int, status_codes: Dict[int, int]) -> None:
+    """
+    Print the computed statistics.
+    
+    Args:
+        total_size (int): Total file size
+        status_codes (dict): Dictionary containing status code counts
+    """
+    print(f"File size: {total_size}")
+    for code in sorted(status_codes.keys()):
+        if status_codes[code] > 0:
+            print(f"{code}: {status_codes[code]}")
 
-                if (code in dict_sc.keys()):
-                    dict_sc[code] += 1
 
-            if (counter == 10):
-                print_msg(dict_sc, total_file_size)
-                counter = 0
+def parse_line(line: str) -> tuple:
+    """
+    Parse a log line and extract status code and file size.
+    
+    Args:
+        line (str): Log line to parse
+    
+    Returns:
+        tuple: (status_code, file_size) or (None, None) if invalid format
+    """
+    pattern = r'^\S+ - \[.+\] "GET /projects/260 HTTP/1.1" (\d+) (\d+)$'
+    match = re.match(pattern, line.strip())
+    
+    if match:
+        try:
+            status_code = int(match.group(1))
+            file_size = int(match.group(2))
+            return status_code, file_size
+        except ValueError:
+            return None, None
+    return None, None
 
-finally:
-    print_msg(dict_sc, total_file_size)
+
+def main():
+    """Main function to process log lines and compute statistics."""
+    total_size = 0
+    line_count = 0
+    status_codes = {
+        200: 0, 301: 0, 400: 0, 401: 0,
+        403: 0, 404: 0, 405: 0, 500: 0
+    }
+    
+    try:
+        for line in sys.stdin:
+            status_code, file_size = parse_line(line)
+            
+            if file_size is not None:
+                total_size += file_size
+                if status_code in status_codes:
+                    status_codes[status_code] += 1
+                    
+            line_count += 1
+            if line_count % 10 == 0:
+                print_statistics(total_size, status_codes)
+                
+    except KeyboardInterrupt:
+        print_statistics(total_size, status_codes)
+        raise
+    
+    
+if __name__ == "__main__":
+    main()
